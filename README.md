@@ -5,7 +5,11 @@ to Manticore (manticore.cs.uchicago.edu), but should be
 able to be easily modified to suite other projects.
 
 
+You can import all scripts within a file by default by 
+creating a ".lldbinit" file in your home directory, with 
+the following line:
 
+    command script import <path to commands.py>/commands.py
 
 
 
