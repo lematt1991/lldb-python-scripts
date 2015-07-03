@@ -19,10 +19,29 @@ def freshVar():
 #        (lldb) bind s->field1 field1
 #        (lldb) print $field1[0][1][2]
 def bind(debugger, command, result, dict):
-    name = freshVar()
-    print('$' + name + ' is now bound to ' + command)
-    debugger.HandleCommand ('expression unsigned long *** $' + name + ' = (unsigned long***) ' + command)
+    args = shlex.split(command)
+    if len(args) == 1:
+        name = freshVar()
+        expr = command
+    else:
+        name = args[1]
+        expr = args[0]
+    debugger.HandleCommand ('expression long *** $' + name + ' = (long***) ' + expr)
 
+def untag_ghc(debugger, command, result, dict):
+    args = shlex.split(command)
+    if len(args) == 1:
+        name = freshVar()
+        expr = command
+    else:
+        name = args[1]
+        expr = args[0]
+
+    print('$' + name + ' is now bound to ' + expr)
+    debugger.HandleCommand('expression long *** $' + name + ' = (long***) ' + '(((unsigned long)' + expr + ') & 0xFFFFFFFFFFFFFFF8)')
+
+
+    
 #----------------------------------------Break label command---------------------------------------------
 def breakLab(debugger, command, result, dict):
     args = shlex.split(command)
