@@ -1,29 +1,27 @@
 # import this into lldb with a command like
 # command script import bind.py
-import lldb
-import shlex
-import optparse
-import pdb
+import lldb, shlex, re, sys
 from string import ascii_lowercase
-import re
-import sys
 
+#Generate fresh variable names
 varNum = 0
-
 def freshVar():
     global varNum
-    print('VarNum = ' + str(varNum))
     newVar = ascii_lowercase[varNum % 26] + str(varNum // 26)
     varNum += 1
     return newVar
 
 #----------------------------------------bind command---------------------------------------------
+# Usage: bind <expr> [name]
+# Bind the expression to the supplied name if given, otherwise bind to a 
+# freshly generated name.  The name that is bound, is of type: long ***,
+# this way we can easily inspect memory using array indexing, Example:
+#        (lldb) bind s->field1 field1
+#        (lldb) print $field1[0][1][2]
 def bind(debugger, command, result, dict):
-    # Use the Shell Lexer to properly parse up command options just like a
-    # shell would
     name = freshVar()
     print('$' + name + ' is now bound to ' + command)
-    debugger.HandleCommand ('expression Value_t *** $' + name + ' = (Value_t***) ' + command)
+    debugger.HandleCommand ('expression unsigned long *** $' + name + ' = (unsigned long***) ' + command)
 
 #----------------------------------------Break label command---------------------------------------------
 def breakLab(debugger, command, result, dict):
@@ -119,9 +117,6 @@ def toFile(debugger, command, result, dict):
 #
 def __lldb_init_module (debugger, dict):
     # This initializer is being run from LLDB in the embedded command interpreter
-    # Make the options so we can generate the help text for the new LLDB
-    # command line command prior to registering it with LLDB below
-
     # Add any commands contained in this module to LLDB
     debugger.HandleCommand('command script add -f %s.bind bind' % __name__)
     debugger.HandleCommand('command script add -f %s.breakLab breakLab' % __name__)
