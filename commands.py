@@ -19,10 +19,29 @@ def freshVar():
 #        (lldb) bind s->field1 field1
 #        (lldb) print $field1[0][1][2]
 def bind(debugger, command, result, dict):
-    name = freshVar()
-    print('$' + name + ' is now bound to ' + command)
-    debugger.HandleCommand ('expression unsigned long *** $' + name + ' = (unsigned long***) ' + command)
+    args = shlex.split(command)
+    if len(args) == 1:
+        name = freshVar()
+        expr = command
+    else:
+        name = args[1]
+        expr = args[0]
+    debugger.HandleCommand ('expression long *** $' + name + ' = (long***) ' + expr)
 
+def untag_ghc(debugger, command, result, dict):
+    args = shlex.split(command)
+    if len(args) == 1:
+        name = freshVar()
+        expr = command
+    else:
+        name = args[1]
+        expr = args[0]
+
+    print('$' + name + ' is now bound to ' + expr)
+    debugger.HandleCommand('expression long *** $' + name + ' = (long***) ' + '(((unsigned long)' + expr + ') & 0xFFFFFFFFFFFFFFF8)')
+
+
+    
 #----------------------------------------Break label command---------------------------------------------
 def breakLab(debugger, command, result, dict):
     args = shlex.split(command)
@@ -111,6 +130,27 @@ def toFile(debugger, command, result, dict):
     f.close()
     debugger.SetOutputFileHandle(sys.stdout, True)
 
+#----------------------------------------PrintBlock---------------------------------------------
+# Usage: printBlock <label> <num>
+# This command will lookup the label in the image, getting back an address, 
+# and then disassemble <num> instructions after the address
+def printBlock(debugger, command, result, dict):
+    args = shlex.split(command)
+    if len(args) != 2:
+        print('usage: printBlock <label> <num>')
+        return
+
+    interpreter = lldb.debugger.GetCommandInterpreter()
+    interpreter.HandleCommand('image lookup --symbol ' + args[0], result)
+    res = re.search('0x[0-9a-z]*', str(result))
+    if res is None:
+        print('Could not find address of label \"' + args[0] + '\"')
+        return
+    else:
+        address = res.group(0)
+
+    interpreter.HandleCommand('disassemble --start-address ' + address + ' -c ' + args[1], result)
+        
 
 #
 # code that runs when this script is imported into LLDB
@@ -125,8 +165,8 @@ def __lldb_init_module (debugger, dict):
     debugger.HandleCommand('command script add -f %s.restart restart' % __name__)
     debugger.HandleCommand('command script add -f %s.untilError untilError' %__name__)
     debugger.HandleCommand('command script add -f %s.toFile toFile' %__name__)
-
-
+    debugger.HandleCommand('command script add -f %s.untag_ghc untag_ghc' %__name__)
+    debugger.HandleCommand('command script add -f %s.printBlock printBlock' %__name__)
 
 
 
