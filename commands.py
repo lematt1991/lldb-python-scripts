@@ -43,6 +43,11 @@ def untag_ghc(debugger, command, result, dict):
 
     
 #----------------------------------------Break label command---------------------------------------------
+# For some reason, LLDB doesn't recognize certain labels within
+# an assembly file.  This command will lookup a label in the image
+# returning an address.  This will then set a breakpoint at that address
+# You can optionally add a condition that will invoke the breakpoint
+# Usage: breakLab labName [condition]
 def breakLab(debugger, command, result, dict):
     args = shlex.split(command)
 
@@ -90,12 +95,19 @@ def examine(debugger, command, result, dict):
     interpreter = lldb.debugger.GetCommandInterpreter()
     interpreter.HandleCommand('x -s8 -fx -c' + args[1] + ' ' + args[0], result)
 
-def restart(debugg, command, result, dict):
+# Re-execute a command (this is used as a helper for untilError
+def restart(debugger, command, result, dict):
     interpreter = lldb.debugger.GetCommandInterpreter()
     print('rerunning \"' + command + '\"')
     interpreter.HandleCommand('kill', result)
     interpreter.HandleCommand('run ' + command, result)
 
+# This will repeatedly re-execute a command until either
+# a user breakpoint is hit, or the program crashes.  This
+# is often useful when debugging concurrent/parallel programs
+# as the problem doesn't always occur on every execution.
+# usage: untilError <command>
+# usually: untilError run
 def untilError(debugger, command, result, dict):
     interpreter = lldb.debugger.GetCommandInterpreter()
     interpreter.HandleCommand('breakpoint list', result)
@@ -116,6 +128,7 @@ def untilError(debugger, command, result, dict):
 
     interpreter.HandleCommand(command, result)
 
+#Redirect the output of lldb to a file
 def toFile(debugger, command, result, dict):
   #Change the output file to a path/name of your choice
     f=open("/Users/ml9951/temp.txt","w")
