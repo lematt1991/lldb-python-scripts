@@ -2,6 +2,8 @@
 # command script import bind.py
 import lldb, shlex, re, sys
 from string import ascii_lowercase
+from os.path import expanduser
+
 
 #Generate fresh variable names
 varNum = 0
@@ -26,6 +28,7 @@ def bind(debugger, command, result, dict):
     else:
         name = args[1]
         expr = args[0]
+    print('Binding ' + expr + ' to ' + name)
     debugger.HandleCommand ('expression long *** $' + name + ' = (long***) ' + expr)
 
 def untag_ghc(debugger, command, result, dict):
@@ -116,9 +119,18 @@ def untilError(debugger, command, result, dict):
 
     interpreter.HandleCommand(command, result)
 
+# Dump the output to a file.  You can specify a file explicitly, 
+# dump to <home directory>/temp.txt by default 
+# usage: toFile <command> [filename]
+# typical usage: toFile run
 def toFile(debugger, command, result, dict):
-  #Change the output file to a path/name of your choice
-    f=open("/Users/ml9951/temp.txt","w")
+    args = shlex.split(command)
+    if len(args) > 1:
+        filename = args[1]
+    else:
+        home = expanduser("~")
+        filename = home + "/temp.txt"
+    f=open(filename,"w")
     debugger.SetOutputFileHandle(f,True);
     try:
         debugger.HandleCommand(command)  
